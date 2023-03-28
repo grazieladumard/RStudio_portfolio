@@ -1,0 +1,137 @@
+---
+title: 'Desafio Final: Tempo de Estudos das populações urbanas e rurais'
+author: "Graziela Dumard"
+date: "2022-12-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#1. Carregar pacotes e os dados 
+
+library(tidyverse)
+library(readxl)
+library(esquisse)
+
+#2. Importar dados
+
+registro_munic <- read_excel("C:/Users/Graziela/Downloads/Curso R para indicadores sociais _UEL/Exercícios/DOWNLOAD REGISTRO ADMINISTRATIVO TOTAL 2012 A 2017.xlsx", 
+                          sheet = "MUNICÍPIO")
+censo_munic <- read_excel("C:/Users/Graziela/Downloads/Curso R para indicadores sociais _UEL/Exercícios/Atlas 2013_municipal, estadual e Brasil.xlsx", 
+                          sheet = "MUN 91-00-10")
+
+# 3. Selecionar e modificar variáveis em censo_UF
+# Criar uma variável com o Estado por 
+# classe de tamanho de população
+# classe de tamanho da população Total IBGE
+# 
+# Até 5.000 
+# 5.001 a 20.000 
+# 20.001 a 100.000 
+# 100.001 a 500.000 
+# Mais de 500.000
+#
+# Classificação ONU para IDH e IDHM
+# Muito baixo: 0 a 04,99. 
+# Baixo: 0,500 a 0,599. 
+# Médio: 0,600 a 0,699. 
+# Alto: 0,700 a 0,799. 
+# Muito alto: 0,800 a 1.
+#
+# Criar a variávei Taxa de Urbanização
+
+censo_munic |>
+  select(ANO, UF, Codmun7, IDHM, IDHM_E, IDHM_L, IDHM_R, POP, pesotot, pesourb, pesoRUR, E_ANOSESTUDO) %>%
+  mutate(classe_pop = case_when(
+    (POP < 5001) ~ "1) Até 5.000",
+    (POP > 5000 & POP < 20001) ~ "2) 5.001 a 20.000",
+    (POP > 20000 & POP < 100000) ~ "3) 20.001 a 100.000",
+    (POP > 100000 & POP < 500000) ~ "4) 100.001 a 500.000",
+    (POP > 500000) ~ "5) Mais de 500.000",
+  )) |>
+  mutate(classe_idhm = case_when(
+    (IDHM < 0.5) ~ "Muito baixo",
+    (IDHM >= 0.5 & IDHM < 0.6) ~ "Baixo",
+    (IDHM >= 0.6 & IDHM < 0.7) ~ "Médio",
+    (IDHM >= 0.7 & IDHM < 0.8) ~ "Alto",
+    (IDHM >= 0.8) ~ "Muito Alto",
+  )) |>
+  mutate(taxa_urbanizacao = (pesourb / pesotot) * 100) |>
+  mutate(urbano_rural = case_when(
+    (taxa_urbanizacao >= 50) ~ "Urbano",
+    (taxa_urbanizacao < 50) ~ "Rural")) -> m1_censo_munic
+
+# Selecionar as variáveis em registro_munic
+m1_regist_munic <- registro_munic |>
+  select(ANO, NOME, IBGE7, IDEB_AI, IDEB_AF)
+
+# filtrar anos em m1_censo_munic e m1_regist_munic
+m1_censo_munic |>
+  filter(ANO == 2010) -> censo_munic2_2010
+m1_regist_munic |>
+  filter(ANO == 2013) -> registro_munic2_2013
+
+# juntar tabelas pela chave do código dos Municipios de sete dígitos do IBGE
+censo_munic2_2010 |>
+  full_join(registro_munic2_2013, by = c("Codmun7"="IBGE7")) |>
+  na.omit() -> juncao1_censo_reg 
+```
+
+## Introdução
+
+Relatório do Desafio Final desenvolvido como parte das atividades do curso de Introdução aos Indicadores com R.
+
+## Objetivo
+
+Apresentar uma análise exploratória inicial que correlaciona os dados de "anos de estudo" com o "IDHM_R" e "IDHM" das populações urbana e rural para tentar compreender se há relação entre tempo de estudo e IDHM e IDHM_R nas populações rural e urbana.
+
+## Apresentação dos dados
+
+O primeiro gráfico refere-se a Relação IDHM e IDHM_R e a proporção dos anos de estudo*.*
+
+```{r}
+ggplot(juncao1_censo_reg) +
+  aes(x = IDHM, y = IDHM_R, colour = E_ANOSESTUDO) +
+  geom_point(shape = "circle", size = 1.5) +
+  scale_color_distiller(palette = "Paired", direction = 1) +
+  labs(title = "Tempo de Estudo e relação IDHM e IDHM_R") +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold", hjust = 0.5)) +
+  facet_wrap(vars(urbano_rural))
+```
+
+O segundo gráfico faz uma aproximação e relaciona apenas as variáveis IDHM_R e Anos de Estudo.
+
+```{r}
+ggplot(juncao1_censo_reg) +
+  aes(x = IDHM_R, y = E_ANOSESTUDO, colour = urbano_rural) +
+  geom_point(shape = "circle", size = 1.5) +
+  scale_color_manual(
+    values = c(Rural = "#A6CEE3",
+    Urbano = "#B15928")
+  ) +
+  labs(
+    title = "Relação IDHM_R e Anos de Estudo",
+    caption = "Fonte: Atlas Brasil e IBGE"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold",
+    hjust = 0.5),
+    plot.caption = element_text(hjust = 0.5)
+  )
+```
+
+## Conclusão
+
+No gráfico 1 observa-se que quanto maior o IDHM e o IDHM_R, maior o tempo de estudo que os indivíduos possuem e isso ocorre em ambas as localizações - urbano e rural. Na localização rural, ambos IDHM e IDHM_R são menores do que na localização urbana. E o tempo estudo é maior e mais concentrado na localização urbana, conforme podemos observar.
+
+Outra observação é no eixo rural há o aparecimento de maior incidência de casos com tempo menor de estudo, abaixo da marca de seis anos, isto é, na cor azul. Este tempo caracterizaria o período do Ensino Fundamental I, até sexto ano. Já no eixo urbano, embora apareçam esses casos, na cor azul, nota-se que há uma predominância para acima de 6 anos, qque se refere as cores verdes.
+
+Além disso, o tempo de estudo acima de 10 anos, que referiria ao Ensino básico e incluiria o Ensino Superior, possui maior predominância na área urbana.
+
+No Gráfico 2, apenas o IDHM_R foi usado como parâmetro para análise do tempo de estudo. E, mais uma vez, ele se mostra predominante em áreas urbanas e influenciando tempo de estudo. Contudo, não se pode deixar de observar que há uma "mancha azul"(rural) misturando ao marrom(urbana), entre os IDHM_R médio e alto, quanto ao tempo de estudo 8 a 10 anos.Isso poderia significar que os indivíduos dessas populações nesses IDHM_R possuem Ensino Médio completo e uma considerável parte acessou o Ensino Superior.
+
+Algumas perguntas ficam em nosso radar que podem ser aprofundadas: O tempo de estudo é maior porque o IDHM e IDHM_R são maiores ou é devido ao tempo de estudo de o IDHM e IDHM_R são maiores? Outro questionamento é a migração do eixo rural para o urbano, será que isso impacta o aumento nos índices urbanos? E quanto ao retorno para o âmbito rural? Isso poderia explicar essa mancha azul entre os IDHM_R médio rural?
+
+Essas são conclusões iniciais, e questionamentos que podem ser explorados com os dados.

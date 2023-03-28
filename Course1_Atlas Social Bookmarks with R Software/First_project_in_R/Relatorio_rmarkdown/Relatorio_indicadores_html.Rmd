@@ -1,0 +1,48 @@
+---
+title: "Relatório de Indicadores IDHM Renda e Longevidade por estados do Brasil -
+  1991-2010"
+author: "Graziela Dumard"
+date: "2022-11-17"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# 1. carregar pacotes necessários
+
+library(ggplot2)
+
+# 2. importar dados 
+
+load("C:/Users/Graziela/Downloads/Curso R para indicadores sociais _UEL/Exercícios/First_project_in_R/dados/Atlas_tblData.RData")
+```
+
+## INTRODUÇÃO
+
+Este é um relatório de análise dos indicadores de **IDHM** de renda e longevidade por estados no Brasil, entre 1991 e 2010. Tal relatório é parte dos curso de de *Introdução aos Indicadores com R* do ObPPP (Observatório de Populações e Políticas Públicas) e do InfoSoc (Informática aplicada à Pesquisa Social).
+
+## ANÁLISE DOS INDICADORES
+
+```{r}
+ggplot(Atlas_2013_municipal_estadual_e_Brasil) +
+ aes(x = IDHM_R, y = IDHM_L, colour = IDHM, size = pesotot) + #o + significa que há mais linhas
+ geom_point(shape = "circle") +
+ scale_color_gradient(low = "#132B43", high = "#2AFF00") +
+ labs(title = " IDHM_Renda_Long_1999_2000_2010", 
+ caption = "Fonte: Atlas Brasil, 2013.") +
+ theme_minimal() +
+ theme(plot.title = element_text(face = "bold", 
+ hjust = 0.5), plot.caption = element_text(size = 10L, hjust = 0.5)) +
+ facet_wrap(vars(ANO))
+```
+
+Os dados extraídos da plataforma Atlas Brasil mostram uma evolução do IDHM em todos os estados brasileiros, ao longo das três décadas analisadas.
+
+## CONCLUSÃO
+
+Com base nesses dados, pode-se concluir que houve alteração nos índices de renda e longevidade que impactaram dos estados entre 1991 e 2010.
+
+***Fonte*****:** Atlas do Desenvolvimento Humano no Brasil, 2013.
